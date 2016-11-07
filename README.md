@@ -67,7 +67,7 @@ Get party information
 ```
 
 **Arguments**:
-- owner_uuid(string)[OPTIONAL]: The UUID of the player who owns the party (Will become first member
+- owner_uuid(string)[OPTIONAL]: The UUID of the player who owns the party
 - party_uuid(string): The UUID of the party
 - sid(string): The server id the party is currently on
 - members(string array): Array of all member uuids in the party including the owner
