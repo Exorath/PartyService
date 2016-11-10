@@ -39,8 +39,6 @@ interface DatabaseProvider {
      */
     List<Party> getPartyFromOwner(String uuid);
 
-    List<Party> getPartyFromMember(String uuid);
-
     /**
      * Update a party
      *

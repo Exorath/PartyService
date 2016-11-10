@@ -19,16 +19,12 @@ package com.exorath.service.party.service;
 import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.DeleteItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
-import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
-import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
-import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.exorath.service.commons.dynamoDBProvider.DynamoDBProvider;
 import com.exorath.service.commons.tableNameProvider.TableNameProvider;
 import com.exorath.service.party.res.Party;
 import com.exorath.service.party.res.Success;
-import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,9 +49,8 @@ public class DynamoDatabaseProvider implements DatabaseProvider {
     }
 
     /**
-     *
      * @param primKey Primary partition key for the table
-     * @param gsi String array for global secondary index's, allow for searching on more than primary key
+     * @param gsi     String array for global secondary index's, allow for searching on more than primary key
      * @return Table containing party information
      */
     private Table setupTable(String primKey, String... gsi) {
@@ -126,16 +121,22 @@ public class DynamoDatabaseProvider implements DatabaseProvider {
      * Get all parties where the key 'primKey' is 'uuid'
      * Some parties may be expired, service should check for those!
      *
-     * @param uuid The uuid to be looked for
+     * @param uuid    The uuid to be looked for
      * @param primKey The index to search for the data
      * @return A list of all parties that matched the uuid to the primary key
      */
     private List<Party> getParties(String uuid, String primKey) {
         QuerySpec query = getQuerySpec(primKey, uuid);
-        System.out.println("Query: " + new Gson().toJson(query));
         ArrayList<Item> items = new ArrayList<>();
-        Index index = table.getIndex(primKey);
-        for (Page<Item, QueryOutcome> page : index.query(query).pages()) {
+
+        ItemCollection<QueryOutcome> queryOutcome;
+        if (primKey.equals(PARTY_UUID)) {
+            queryOutcome = table.query(query);
+        } else {
+            Index index = table.getIndex(primKey);
+            queryOutcome = index.query(query);
+        }
+        for (Page<Item, QueryOutcome> page : queryOutcome.pages()) {
             for (Item aPage : page) {
                 items.add(aPage);
             }
@@ -154,8 +155,8 @@ public class DynamoDatabaseProvider implements DatabaseProvider {
     /**
      * Get the query spec for a search
      *
-     * @param primKey  The primary key to search with
-     * @param uuid The value that should be looked for
+     * @param primKey The primary key to search with
+     * @param uuid    The value that should be looked for
      * @return Query spec that will return all matching results when ran
      */
     private QuerySpec getQuerySpec(String primKey, String uuid) {
@@ -175,31 +176,6 @@ public class DynamoDatabaseProvider implements DatabaseProvider {
     }
 
     /**
-     * Get all parties a player is a member of, will return null if they belong to no party
-     *
-     * @param playerUuid The uuid of the member
-     * @return List of all parties that the player is a member of, even expired parties
-     */
-    public List<Party> getPartyFromMember(String playerUuid) {
-        ScanSpec scanSpec = new ScanSpec();
-        scanSpec.withFilterExpression("#members contains :uuid")
-                .withNameMap(new NameMap().with("#members", MEMBERS))
-                .withValueMap(new ValueMap().with(":uuid", playerUuid));
-        ItemCollection<ScanOutcome> scanOutcome = table.scan(scanSpec);
-        ArrayList<Item> items = new ArrayList<>();
-        for (Page<Item, ScanOutcome> page : scanOutcome.pages()) {
-            for (Item aPage : page) {
-                items.add(aPage);
-            }
-        }
-        ArrayList<Party> parties = new ArrayList<>();
-        for (Item item : items) {
-            parties.add(getPartyFromItem(item));
-        }
-        return parties;
-    }
-
-    /**
      * Convert an item containing information about a party into a party object
      *
      * @param item The item containing the information
@@ -214,6 +190,13 @@ public class DynamoDatabaseProvider implements DatabaseProvider {
         return new Party(party_uuid, owner_uuid, serverId, members, expiry);
     }
 
+    /**
+     * Update the party in the database
+     * Update will use the party_uuid, should be set before calling this!
+     *
+     * @param party The party that should be updated
+     * @return Success true if the item updated without error
+     */
     @Override
     public Success updateParty(Party party) {
         UpdateItemSpec update = getUpdateItemSpec(party);
@@ -221,6 +204,13 @@ public class DynamoDatabaseProvider implements DatabaseProvider {
         return new Success(true);
     }
 
+    /**
+     * Get an update item spec for the given party argument
+     * This does not call the update, just returns an object that can be used to update the party
+     *
+     * @param party Generate the update spec based on this party
+     * @return Update spec with all the information to update the party
+     */
     private UpdateItemSpec getUpdateItemSpec(Party party) {
         UpdateItemSpec update = new UpdateItemSpec();
         update.withPrimaryKey(new KeyAttribute(PARTY_UUID, party.getPartyUuid()));
@@ -232,6 +222,11 @@ public class DynamoDatabaseProvider implements DatabaseProvider {
         return update;
     }
 
+    /**
+     * Removes a party from the database using its party_uuid
+     *
+     * @param uuid The party unique id
+     */
     public void removeParty(String uuid) {
         if (getPartyFromId(uuid) != null) {
             DeleteItemSpec deleteItemSpec = new DeleteItemSpec();

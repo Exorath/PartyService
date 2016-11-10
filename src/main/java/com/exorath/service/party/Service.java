@@ -44,17 +44,6 @@ public interface Service {
     Party getPartyFromOwner(String uuid);
 
     /**
-     * Get party from owner uuid
-     *
-     * Exceptions:
-     *   Database unreachable
-     *
-     * @param uuid UUID of the party
-     * @return Party that member is party of, empty is no party
-     */
-    Party getPartyFromMember(String uuid);
-
-    /**
      * Update party from the party uuid
      *
      * Exceptions:

@@ -31,19 +31,28 @@ public class SimpleService implements Service {
         this.provider = provider;
     }
 
+    /**
+     * Returns a party with matching uuid
+     * If there are more than 1 party with that uuid then the party with the last expire time will be returnd.
+     *
+     * @param uuid UUID of the party
+     * @return The party with matching uuid and last expire time
+     */
     @Override
     public Party getPartyFromID(String uuid) {
         return getParty(provider.getPartyFromId(uuid));
     }
 
+    /**
+     * Return the party with the owner uuid matching the given argument
+     * If more than 1 party is returned then the party with the last expire time is returned
+     *
+     * @param uuid UUID of the party owner
+     * @return The party with owner of the uuid and last expire time
+     */
     @Override
     public Party getPartyFromOwner(String uuid) {
         return getParty(provider.getPartyFromOwner(uuid));
-    }
-
-    @Override
-    public Party getPartyFromMember(String uuid) {
-        return getParty(provider.getPartyFromMember(uuid));
     }
 
     /**

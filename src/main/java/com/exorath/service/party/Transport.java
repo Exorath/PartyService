@@ -35,16 +35,15 @@ class Transport {
         // Owner UUID
         get("/parties/byowner/:owner_uuid", Transport.getGetPartyFromOwnerRoute(service), GSON::toJson);
         put("/parties/byowner/:owner_uuid", Transport.getUpdatePartyFromOwnerRoute(service), GSON::toJson);
-        // Member UUID
-        get("/parties/player/:member_uuid", Transport.getGetPartyFromMember(service), GSON::toJson);
+
+        //TODO: Add ability to get a party from a member
     }
 
     private static Route getGetPartyFromIdRoute(Service service) {
         return (req, res) -> {
             try {
                 String param = req.params("party_uuid");
-                Party party = service.getPartyFromID(param);
-                return party;
+                return service.getPartyFromID(param);
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
@@ -97,19 +96,6 @@ class Transport {
             } catch (Exception e) {
                 e.printStackTrace();
                 return new Success(false, e.getMessage());
-            }
-        };
-    }
-
-    private static Route getGetPartyFromMember(Service service) {
-        return (req, res) -> {
-            try {
-                String param = req.params("member_uuid");
-                Party party = service.getPartyFromMember(param);
-                return party;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
             }
         };
     }
